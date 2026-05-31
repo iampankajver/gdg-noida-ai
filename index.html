@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aura - Personal AI Career Intelligence & Advisor</title>
+  <meta name="description" content="Fuse job postings, candidate profiles, and labor-market trends into personalized, actionable guidance and mock technical prep.">
+  
+  <!-- Font Awesome for sleek modern icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom Style Sheet -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">A</div>
+        <span class="brand-name">Aura Intel</span>
+      </div>
+      
+      <nav class="nav-menu">
+        <a class="nav-item active" data-tab="dashboard">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Dashboard</span>
+        </a>
+        <a class="nav-item" data-tab="profile">
+          <i class="fa-solid fa-user-gear"></i>
+          <span>Profile & Resume</span>
+        </a>
+        <a class="nav-item" data-tab="trends">
+          <i class="fa-solid fa-arrow-trend-up"></i>
+          <span>Market Trends</span>
+        </a>
+        <a class="nav-item" data-tab="advisor">
+          <i class="fa-solid fa-graduation-cap"></i>
+          <span>Career Advisor</span>
+        </a>
+        <a class="nav-item" data-tab="chat">
+          <i class="fa-solid fa-comments"></i>
+          <span>AI Coach Nova</span>
+        </a>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="user-avatar">PV</div>
+        <div class="user-info">
+          <span class="user-name" id="user-display-name">Pankaj Verma</span>
+          <span class="user-status"><span class="pulse-dot" style="display:inline-block; width:6px; height:6px; margin-right:4px;"></span>Active Standby</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="page-title-container">
+          <h1 class="page-title" id="header-title">Welcome, Pankaj Verma</h1>
+          <p class="page-subtitle" id="header-subtitle">Here is your career alignment index & market standing.</p>
+        </div>
+        
+        <div class="header-actions">
+          <div class="market-pulse-pill">
+            <span class="pulse-dot"></span>
+            <span>Noida Pulse: Active</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Body -->
+      <div class="content-body">
+        
+        <!-- DASHBOARD TAB -->
+        <section class="tab-content active" id="dashboard-tab">
+          <div class="dashboard-grid">
+            
+            <!-- Statistics Card Row -->
+            <div class="stat-card-row">
+              <div class="card stat-card">
+                <div class="stat-icon primary">
+                  <i class="fa-solid fa-bullseye"></i>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value" id="dash-alignment-score">0%</span>
+                  <span class="stat-label">Market Alignment</span>
+                </div>
+              </div>
+              
+              <div class="card stat-card">
+                <div class="stat-icon warning">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value" id="dash-gaps-count">0</span>
+                  <span class="stat-label">Critical Gaps</span>
+                </div>
+              </div>
+              
+              <div class="card stat-card">
+                <div class="stat-icon accent">
+                  <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value" id="dash-acquired-count">0</span>
+                  <span class="stat-label">Acquired Skills</span>
+                </div>
+              </div>
+              
+              <div class="card stat-card">
+                <div class="stat-icon secondary">
+                  <i class="fa-solid fa-briefcase"></i>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value" id="dash-active-offers">0</span>
+                  <span class="stat-label">Matching Jobs</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Alignment Gauge Widget -->
+            <div class="card alignment-widget">
+              <h3 style="margin-bottom: 8px;">Calibrated Market Fit</h3>
+              <p style="font-size: 0.8rem; color: var(--text-secondary);">Your alignment against selected career path targets.</p>
+              
+              <div class="gauge-container">
+                <svg class="gauge-svg" viewBox="0 0 160 160">
+                  <defs>
+                    <linearGradient id="gauge-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#06b6d4" />
+                      <stop offset="50%" stop-color="#6366f1" />
+                      <stop offset="100%" stop-color="#a855f7" />
+                    </linearGradient>
+                  </defs>
+                  <circle class="gauge-bg" cx="80" cy="80" r="70" />
+                  <circle class="gauge-bar" id="gauge-bar" cx="80" cy="80" r="70" />
+                </svg>
+                <div class="gauge-text-overlay">
+                  <span class="gauge-value" id="dash-alignment-gauge-val">--</span>
+                  <span class="gauge-lbl">INDEX</span>
+                </div>
+              </div>
+              
+              <div style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4;">
+                Complete checklist roadmap items or upload a matching resume to scale this index.
+              </div>
+            </div>
+
+            <!-- High Impact Recommendations Panel -->
+            <div class="card recommendations-panel">
+              <div class="card-title">
+                <span>Active Advice Playbook</span>
+                <i class="fa-solid fa-lightbulb text-warning" style="font-size: 1.1rem;"></i>
+              </div>
+              <div id="dashboard-recommendations" style="display:flex; flex-direction:column; gap:12px;">
+                <!-- Recommendations dynamic output -->
+              </div>
+            </div>
+
+            <!-- Noida Jobs Calibrated Feed -->
+            <div class="card" style="grid-column: span 12;">
+              <div class="card-title">
+                <span>Matching Noida Job Postings</span>
+                <span class="stat-trend up" style="font-size: 0.8rem;"><i class="fa-solid fa-location-dot"></i> Live calibration Noida/Remote</span>
+              </div>
+              <div id="dashboard-jobs-container" style="display:flex; flex-direction:column; gap:12px;">
+                <!-- Jobs List dynamic output -->
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- PROFILE & RESUME TAB -->
+        <section class="tab-content" id="profile-tab">
+          <div class="profile-layout">
+            
+            <!-- Profile Info Form & Skills Manager -->
+            <div class="card profile-form-section">
+              <div class="card-title">
+                <span>Candidate Profile Calibration</span>
+                <i class="fa-solid fa-id-card text-primary"></i>
+              </div>
+              
+              <div class="form-group">
+                <label for="profile-name">Full Name</label>
+                <input type="text" id="profile-name" class="form-input" placeholder="Enter full name">
+              </div>
+              
+              <div class="form-group">
+                <label for="profile-email">Email Address</label>
+                <input type="email" id="profile-email" class="form-input" placeholder="Enter email">
+              </div>
+              
+              <div class="form-group">
+                <label for="profile-target-role">Target Career Track</label>
+                <select id="profile-target-role" class="form-select">
+                  <!-- Roles drop-down dynamically listed -->
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label>Active Skills Inventory</label>
+                <div class="skill-tag-container" id="skill-tag-container">
+                  <!-- Skills tagged listed -->
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label for="new-skill-input">Add New Capability</label>
+                <div class="skill-input-row">
+                  <input type="text" id="new-skill-input" class="form-input" placeholder="e.g. Next.js, Kubernetes" style="flex-grow: 1;">
+                  <button id="add-skill-btn" class="btn-primary" style="padding: 0 16px;"><i class="fa-solid fa-plus"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Resume ATS Review Panel -->
+            <div class="card resume-feedback-section">
+              <div class="card-title">
+                <span>Resume ATS Scorer & Feedback</span>
+                <i class="fa-solid fa-file-invoice text-secondary"></i>
+              </div>
+              
+              <div style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4;">
+                Paste your resume text below to grade ATS compatibility, content metrics, structure clarity, and language density.
+              </div>
+              
+              <div style="display: flex; gap: 12px; margin-top: 8px;">
+                <button id="load-weak-sample" class="btn-secondary" style="flex: 1; padding: 8px 12px; font-size: 0.8rem;">
+                  <i class="fa-solid fa-file-circle-exclamation text-danger"></i> Load Weak Resume
+                </button>
+                <button id="load-strong-sample" class="btn-secondary" style="flex: 1; padding: 8px 12px; font-size: 0.8rem;">
+                  <i class="fa-solid fa-file-circle-check text-accent"></i> Load Strong Resume
+                </button>
+              </div>
+
+              <textarea id="resume-text-input" class="form-textarea" rows="8" placeholder="Paste full resume text content..." style="resize: vertical;"></textarea>
+              
+              <button id="analyze-resume-btn" class="btn-primary w-full">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Audit Resume Layout
+              </button>
+
+              <div class="score-breakdown-row">
+                <div class="mini-score-card">
+                  <div class="mini-score-val" id="overall-score-val">--%</div>
+                  <div class="mini-score-lbl">Overall</div>
+                </div>
+                <div class="mini-score-card">
+                  <div class="mini-score-val" id="impact-score-val">--%</div>
+                  <div class="mini-score-lbl">Impact Metrics</div>
+                </div>
+                <div class="mini-score-card">
+                  <div class="mini-score-val" id="clarity-score-val">--%</div>
+                  <div class="mini-score-lbl">Clarity</div>
+                </div>
+                <div class="mini-score-card">
+                  <div class="mini-score-val" id="ats-score-val">--%</div>
+                  <div class="mini-score-lbl">ATS Match</div>
+                </div>
+              </div>
+
+              <h4 style="margin-top: 16px; font-size: 0.95rem;">Actionable Advice Bulletpoints</h4>
+              <div class="resume-issues-list" id="resume-issues-container">
+                <span style="color: var(--text-muted); font-size: 0.8rem;">No active analysis. Paste text or load a sample resume.</span>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- MARKET TRENDS TAB -->
+        <section class="tab-content" id="trends-tab">
+          <div class="trends-layout">
+            
+            <!-- Growth Skills heat progress items -->
+            <div class="card">
+              <div class="card-title">
+                <span>Fastest Growing Capabilities</span>
+                <i class="fa-solid fa-fire text-danger"></i>
+              </div>
+              <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 16px;">
+                Identified tech-stacks gaining the most job listings & highest compensation multiplier in Noida.
+              </p>
+              <div id="growth-skills-list" style="display:flex; flex-direction:column; gap:12px;">
+                <!-- Growth skills dynamic list -->
+              </div>
+            </div>
+
+            <!-- Hiring velocity explanations -->
+            <div class="card" style="display:flex; flex-direction:column; gap:16px;">
+              <div class="card-title">
+                <span>Hiring Velocity & Comp Index</span>
+                <i class="fa-solid fa-clock text-accent"></i>
+              </div>
+              <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
+                <p>🚀 **Hiring Speed:** The average time-to-hire (in days) has compressed significantly for AI Engineers (avg 8 days in May) and Cloud DevOps Specialists (avg 11 days). Companies are competing aggressively for certified architectures.</p>
+                <br>
+                <p>💰 **Salary Multipliers:** A candidate combining standard Frontend skills with TypeScript and Web Performance tuning (Next.js) commands up to a **40% premium** in local startup negotiations.</p>
+              </div>
+              <div class="rec-item" style="margin-top:auto;">
+                <div style="font-size: 1.5rem;">📊</div>
+                <div class="rec-details">
+                  <h4 style="font-size: 0.9rem;">Interactive Visualizer</h4>
+                  <p style="font-size: 0.78rem;">Hover on charts below to see salary values and average onboarding durations.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Salary group chart -->
+            <div class="card full-width">
+              <div class="card-title">
+                <span>Annual Salary Range by Experience (Noida)</span>
+                <div style="display:flex; gap:12px; font-size: 0.75rem;">
+                  <span><i class="fa-solid fa-square" style="color: #6b7280; margin-right:4px;"></i>Entry</span>
+                  <span><i class="fa-solid fa-square" style="color: #06b6d4; margin-right:4px;"></i>Mid</span>
+                  <span><i class="fa-solid fa-square" style="color: #6366f1; margin-right:4px;"></i>Senior</span>
+                </div>
+              </div>
+              <div id="salary-chart-container" class="chart-wrapper">
+                <!-- Grouped bar chart SVG rendered -->
+              </div>
+            </div>
+
+            <!-- Hiring speed trend line -->
+            <div class="card full-width">
+              <div class="card-title">
+                <span>Hiring Velocity Index (Average Days to Hire)</span>
+                <div style="display:flex; gap:12px; font-size: 0.75rem;">
+                  <span><i class="fa-solid fa-circle" style="color: #06b6d4; margin-right:4px;"></i>Frontend</span>
+                  <span><i class="fa-solid fa-circle" style="color: #6366f1; margin-right:4px;"></i>DevOps</span>
+                  <span><i class="fa-solid fa-circle" style="color: #10b981; margin-right:4px;"></i>AI / Data</span>
+                </div>
+              </div>
+              <div id="velocity-chart-container" class="chart-wrapper">
+                <!-- Multi-line SVG chart rendered -->
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- CAREER ADVISOR TAB -->
+        <section class="tab-content" id="advisor-tab">
+          <div class="advisor-layout">
+            
+            <!-- Target selector bar -->
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <h3 style="font-size: 1.1rem; font-weight:600;">Choose Your Target Career Role</h3>
+              <p style="font-size: 0.8rem; color: var(--text-secondary);">Select the role you wish to calibrate your profile skills against.</p>
+            </div>
+            
+            <div class="target-role-selector" id="target-role-selector">
+              <!-- Roles selection cards output -->
+            </div>
+
+            <!-- Skill gaps lists -->
+            <div class="gap-audit-grid">
+              
+              <!-- Audit Score card -->
+              <div class="card gap-summary-card">
+                <div class="card-title">
+                  <span>Skill Alignment Audit</span>
+                  <i class="fa-solid fa-scale-balanced text-warning"></i>
+                </div>
+                <div id="audit-summary">
+                  <!-- Audit parameters output -->
+                </div>
+              </div>
+
+              <!-- List of matching and missing -->
+              <div class="card">
+                <div class="card-title">
+                  <span>Skills Competency Details</span>
+                  <i class="fa-solid fa-list-check text-primary"></i>
+                </div>
+                <div id="skill-breakdown-list" style="display:flex; flex-direction:column; gap:10px;">
+                  <!-- Dynamic tags audit -->
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Timelines checklists modules -->
+            <div style="margin-top: 16px;">
+              <h3 style="font-size:1.1rem; margin-bottom:8px;">Skill Gap Closing Roadmap</h3>
+              <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:16px;">
+                Complete the checklists for missing requirements below to automatically acquire skills and boost your alignment score!
+              </p>
+              
+              <div class="roadmap-timeline" id="roadmap-timeline-container">
+                <!-- Learning timeline modules checklists dynamically output -->
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- AI COACH CHAT TAB -->
+        <section class="tab-content" id="chat-tab">
+          <div class="chat-layout">
+            
+            <!-- Chat Feed Panel -->
+            <div class="card chat-panel">
+              <div class="chat-header-bar">
+                <div class="coach-status-avatar">
+                  N
+                  <div class="coach-online-dot"></div>
+                </div>
+                <div style="display:flex; flex-direction:column;">
+                  <span style="font-size: 0.95rem; font-weight: 700;">Nova AI Coach</span>
+                  <span style="font-size: 0.75rem; color: var(--accent);">Ready to interview or advise</span>
+                </div>
+              </div>
+              
+              <!-- Messages -->
+              <div class="chat-messages-container" id="chat-messages-container">
+                <!-- Conversational flow -->
+              </div>
+              
+              <!-- Text input -->
+              <div class="chat-input-bar">
+                <input type="text" id="chat-input-field" class="chat-input-field" placeholder="Ask Nova a question, e.g. Start a Mock Interview...">
+                <button id="chat-send-btn" class="chat-send-btn">
+                  <i class="fa-solid fa-paper-plane"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Chat Suggestions sidebar -->
+            <div class="chat-sidebar-panel">
+              
+              <!-- Interview Score card widget -->
+              <div id="chat-sidebar-metrics">
+                <!-- Interview stats widgets -->
+              </div>
+
+              <!-- Quick prompts suggestions -->
+              <div class="card">
+                <div class="card-title" style="margin-bottom: 12px; font-size: 0.95rem;">
+                  <span>Nova Quick Options</span>
+                </div>
+                <div class="prompt-suggestions-list" id="prompt-suggestions">
+                  <!-- suggestions listing -->
+                </div>
+              </div>
+
+              <div class="card" style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">
+                <h4 style="color: white; margin-bottom: 6px; font-size: 0.85rem;">Mock Interview Tips:</h4>
+                <p>- Give detailed answers with engineering keywords.</p>
+                <p style="margin-top: 4px;">- Mention optimization, scalability, and lifecycle considerations to boost evaluation scoring.</p>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- CELEBRATE MODAL DIALOG -->
+  <div class="modal-overlay" id="completion-modal">
+    <div class="modal-container">
+      <div class="modal-title" id="modal-title">Skill Unlocked! 🚀</div>
+      <div class="modal-text" id="modal-text">Content info</div>
+      <div class="modal-buttons">
+        <button id="modal-close-btn" class="btn-primary" style="padding: 8px 20px;">Awesome, thank you!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main scripts linking -->
+  <script src="js/data.js"></script>
+  <script src="js/profile.js"></script>
+  <script src="js/trends.js"></script>
+  <script src="js/advisor.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
