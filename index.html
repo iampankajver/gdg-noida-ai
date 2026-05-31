@@ -240,6 +240,18 @@
                 </button>
               </div>
 
+              <!-- PDF Resume Upload Container -->
+              <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
+                <label for="resume-file-input" style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Or Upload PDF Resume</label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <input type="file" id="resume-file-input" class="form-input" accept=".pdf" style="flex-grow: 1; padding: 8px; font-size: 0.8rem;">
+                  <button id="btn-upload-pdf" class="btn-secondary" style="padding: 10px 16px; font-size: 0.8rem; height: 38px; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-file-pdf text-danger"></i> Analyze PDF
+                  </button>
+                </div>
+              </div>
+
+
               <!-- Interactive editor tabs -->
               <div class="resume-container-box">
                 <div class="editor-tabs">
