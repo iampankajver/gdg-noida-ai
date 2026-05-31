@@ -292,8 +292,12 @@ function generateLocalAnalysis(text, role) {
   };
 }
 
-// Start Server listener
-app.listen(PORT, () => {
-  console.log(`\n🚀 [Aura Backend] Server running at http://localhost:${PORT}`);
-  console.log(`📡 Static files served from current folder: ${__dirname}`);
-});
+// Start Server listener only when run directly
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`\n🚀 [Aura Backend] Server running at http://localhost:${PORT}`);
+    console.log(`📡 Static files served from current folder: ${__dirname}`);
+  });
+}
+
+module.exports = app;
