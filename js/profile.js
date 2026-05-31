@@ -309,18 +309,54 @@ class AuraProfileManager {
   // Parses resume text and injects interactive span highlights (Hackathon wow feature)
   renderInteractiveHighlights(text) {
     let html = text;
+    const currentRole = AURA_DATA.roles.find(r => r.id === this.profile.targetRoleId);
+    const keywords = currentRole ? currentRole.requiredSkills : [];
     
-    // List of typical weak patterns and replacement suggestions
-    const fixes = [
-      { find: /worked on/gi, label: "Worked on", replace: "Engineered", desc: "Use high-impact technical action verbs.", type: "weak", scoreBoost: 8 },
-      { find: /helped build/gi, label: "Helped build", replace: "Co-developed & deployed", desc: "Show complete project ownership.", type: "passive", scoreBoost: 5 },
-      { find: /attending standups/gi, label: "attending standups", replace: "Facilitating agile cycles", desc: "Change list of chores to leadership metrics.", type: "passive", scoreBoost: 4 },
-      { find: /solved bugs/gi, label: "Solved bugs", replace: "Debugged and optimized pipelines", desc: "Quantify details to reflect precision.", type: "weak", scoreBoost: 6 }
+    // Build list of dynamic fixes based on the text
+    this.dynamicFixes = [];
+    
+    // 1. Scan for passive / weak verbs
+    const weakPatterns = [
+      { find: /\bworked on\b/gi, label: "worked on", replace: "Engineered", desc: "Use high-impact technical action verbs.", type: "weak", scoreBoost: 8 },
+      { find: /\bhelped build\b/gi, label: "helped build", replace: "Co-developed & deployed", desc: "Show complete project ownership.", type: "passive", scoreBoost: 5 },
+      { find: /\battending standups\b/gi, label: "attending standups", replace: "Facilitating agile cycles", desc: "Change list of chores to leadership metrics.", type: "passive", scoreBoost: 4 },
+      { find: /\bsolved bugs\b/gi, label: "solved bugs", replace: "Debugged and optimized pipelines", desc: "Quantify details to reflect precision.", type: "weak", scoreBoost: 6 },
+      { find: /\bassisted with\b/gi, label: "assisted with", replace: "Spearheaded integration of", desc: "Use active descriptors reflecting leadership.", type: "weak", scoreBoost: 5 },
+      { find: /\bresponsible for\b/gi, label: "responsible for", replace: "Architected", desc: "Swap passive chores for technical achievements.", type: "passive", scoreBoost: 7 }
     ];
 
-    fixes.forEach((f, idx) => {
-      // Replace matches with styled interactive spans
-      html = html.replace(f.find, `<span class="highlight-item ${f.type}" data-fix-idx="${idx}">${f.label}</span>`);
+    let fixIdx = 0;
+    weakPatterns.forEach(pattern => {
+      if (pattern.find.test(html)) {
+        this.dynamicFixes.push(pattern);
+        const placeholder = `__FIX_SPAN_${fixIdx}__`;
+        html = html.replace(pattern.find, placeholder);
+        fixIdx++;
+      }
+    });
+
+    // 2. Scan for missing keywords and prompt insertion
+    const missingSkills = keywords.filter(kw => !text.toLowerCase().includes(kw.toLowerCase()));
+    if (missingSkills.length > 0) {
+      const skillsRegex = /\b(skills|core skills|technologies|proficiencies|languages)\b/i;
+      if (skillsRegex.test(html)) {
+        const match = html.match(skillsRegex)[0];
+        const missingSkillName = missingSkills[0];
+        this.dynamicFixes.push({
+          label: match,
+          replace: `${match}: ${missingSkillName}, Next.js, TypeScript`,
+          desc: `ATS Optimization: Insert missing required tech keywords like "${missingSkillName}" into your skills list.`,
+          type: "ats-missing",
+          scoreBoost: 10
+        });
+        html = html.replace(skillsRegex, `__FIX_SPAN_${fixIdx}__`);
+        fixIdx++;
+      }
+    }
+
+    // Restore spans
+    this.dynamicFixes.forEach((f, idx) => {
+      html = html.replace(`__FIX_SPAN_${idx}__`, `<span class="highlight-item ${f.type}" data-fix-idx="${idx}">${f.label}</span>`);
     });
 
     this.resumeInteractivePreview.innerHTML = html;
@@ -328,8 +364,8 @@ class AuraProfileManager {
     // Attach click events to the spans
     this.resumeInteractivePreview.querySelectorAll('.highlight-item').forEach(span => {
       span.addEventListener('click', (e) => {
-        const fixIdx = parseInt(e.target.getAttribute('data-fix-idx'));
-        this.showFixTooltip(e.target, fixes[fixIdx]);
+        const idx = parseInt(span.getAttribute('data-fix-idx'));
+        this.showFixTooltip(span, this.dynamicFixes[idx]);
       });
     });
   }
