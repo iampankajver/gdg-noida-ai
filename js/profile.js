@@ -415,6 +415,7 @@ class AuraProfileManager {
   }
 
   styleScoreNumber(element, val) {
+    if (!element) return;
     element.classList.remove('high', 'mid', 'low');
     if (val >= 80) element.classList.add('high');
     else if (val >= 60) element.classList.add('mid');
@@ -422,6 +423,7 @@ class AuraProfileManager {
   }
 
   animateScoreChange(element, endVal) {
+    if (!element) return;
     let startVal = 0;
     const duration = 800;
     const startTime = performance.now();
