@@ -485,11 +485,13 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 .rec-type-badge.skill { background: rgba(6, 182, 212, 0.15); color: var(--secondary); }
 .rec-type-badge.resume { background: rgba(99, 102, 241, 0.15); color: var(--primary); }
 .rec-type-badge.market { background: rgba(16, 185, 129, 0.15); color: var(--accent); }
+.rec-type-badge.weak { background: rgba(244, 63, 94, 0.15); color: var(--danger); }
 
 .rec-details h4 {
   font-size: 0.95rem;
@@ -521,15 +523,6 @@ h1, h2, h3, h4, h5, h6 {
   border-color: transparent;
   color: white;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-}
-
-/* Dashboard Trends Preview */
-.trends-preview-panel {
-  grid-column: span 6;
-}
-
-.advisor-preview-panel {
-  grid-column: span 6;
 }
 
 /* Profile Builder Section */
@@ -658,26 +651,153 @@ h1, h2, h3, h4, h5, h6 {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Resume Feedback Panel */
+/* Resume Feedback Panel & Interactive Highlighter */
 .resume-feedback-section {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.resume-uploader {
-  border: 2px dashed rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-md);
-  padding: 32px;
-  text-align: center;
-  cursor: pointer;
-  transition: var(--transition);
-  background: rgba(255, 255, 255, 0.01);
+.resume-container-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.resume-uploader:hover {
-  border-color: var(--primary);
-  background: rgba(99, 102, 241, 0.02);
+/* Side by side display of original textarea and interactive preview */
+.editor-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 8px;
+}
+
+.editor-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: var(--transition);
+}
+
+.editor-tab-btn.active {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-weight: 600;
+}
+
+.resume-interactive-preview {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 16px;
+  min-height: 200px;
+  max-height: 350px;
+  overflow-y: auto;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  display: none;
+}
+
+.resume-interactive-preview.active {
+  display: block;
+}
+
+/* Highlighting styles in preview */
+.highlight-item {
+  position: relative;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: var(--transition);
+  font-weight: 600;
+}
+
+.highlight-item.weak {
+  background-color: rgba(244, 63, 94, 0.2);
+  border-bottom: 2px dashed var(--danger);
+}
+
+.highlight-item.passive {
+  background-color: rgba(245, 158, 11, 0.2);
+  border-bottom: 2px dashed var(--warning);
+}
+
+.highlight-item.ats-missing {
+  background-color: rgba(6, 182, 212, 0.2);
+  border-bottom: 2px dashed var(--secondary);
+}
+
+.highlight-item:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Floating Fix Tooltip */
+.floating-fix-card {
+  position: absolute;
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  width: 280px;
+  z-index: 500;
+  box-shadow: var(--shadow-lg);
+  display: none;
+  animation: fadeIn 0.2s ease;
+  backdrop-filter: var(--glass-filter);
+}
+
+.floating-fix-card::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 20px;
+  width: 10px;
+  height: 10px;
+  background: var(--bg-secondary);
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  transform: rotate(45deg);
+}
+
+.floating-fix-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  color: white;
+}
+
+.floating-fix-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.floating-fix-action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-fix-apply {
+  background: var(--primary-gradient);
+  border: none;
+  color: white;
+  font-size: 0.75rem;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-fix-apply:hover {
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
 }
 
 .score-breakdown-row {
@@ -757,6 +877,21 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--accent);
   font-weight: 600;
   margin-right: 4px;
+}
+
+/* Custom Job Calibrator Panel */
+.custom-job-calibrator-card {
+  border: 1px dashed rgba(6, 182, 212, 0.4);
+  background: rgba(6, 182, 212, 0.02);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.custom-job-calibrator-card:hover {
+  border-color: var(--secondary);
 }
 
 /* Market Insights Layout */
@@ -1114,6 +1249,47 @@ h1, h2, h3, h4, h5, h6 {
   background-color: var(--accent);
   border: 2px solid var(--bg-secondary);
   border-radius: 50%;
+}
+
+/* Visual soundwave wrapper and canvas styling */
+.soundwave-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.voice-wave-canvas {
+  width: 100px;
+  height: 30px;
+  border-radius: 15px;
+  background: rgba(0, 0, 0, 0.3);
+  display: none;
+}
+
+.voice-wave-canvas.active {
+  display: block;
+}
+
+.btn-audio-toggle {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  color: var(--text-secondary);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-audio-toggle.active {
+  background: var(--secondary-gradient);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 0 10px var(--secondary);
 }
 
 .chat-messages-container {
