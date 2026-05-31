@@ -240,7 +240,26 @@
                 </button>
               </div>
 
-              <textarea id="resume-text-input" class="form-textarea" rows="8" placeholder="Paste full resume text content..." style="resize: vertical;"></textarea>
+              <!-- Interactive editor tabs -->
+              <div class="resume-container-box">
+                <div class="editor-tabs">
+                  <button id="btn-edit-raw" class="editor-tab-btn active">Raw Text Area</button>
+                  <button id="btn-edit-interactive" class="editor-tab-btn">Interactive Fix Highlights</button>
+                </div>
+                
+                <textarea id="resume-text-input" class="form-textarea" rows="8" placeholder="Paste full resume text content..." style="resize: vertical;"></textarea>
+                <div id="resume-interactive-preview" class="resume-interactive-preview"></div>
+                
+                <!-- Floating fix tooltip -->
+                <div class="floating-fix-card" id="floating-fix-card">
+                  <div class="floating-fix-title" id="floating-fix-title">Suggestion</div>
+                  <div class="floating-fix-desc" id="floating-fix-desc">Details...</div>
+                  <div class="floating-fix-action-row">
+                    <span style="color: var(--text-muted); font-size:0.7rem;">Click to fix</span>
+                    <button class="btn-fix-apply" id="btn-apply-interactive-fix">Auto Replace</button>
+                  </div>
+                </div>
+              </div>
               
               <button id="analyze-resume-btn" class="btn-primary w-full">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> Audit Resume Layout
@@ -386,6 +405,21 @@
 
             </div>
 
+            <!-- Custom Job Calibrator (Outstanding Hackathon addition) -->
+            <div class="card custom-job-calibrator-card">
+              <div class="card-title">
+                <span>Calibrate Custom Job Description</span>
+                <i class="fa-solid fa-wand-magic-sparkles text-secondary"></i>
+              </div>
+              <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">
+                Paste a specific job posting description from any company (e.g. Google, Innovate AI). Aura will scan the text dynamically, isolate the requested technologies, audit your skill alignment, and map a personalized roadmap to bridge the gap!
+              </p>
+              <textarea id="custom-job-textarea" class="form-textarea" rows="4" placeholder="Paste target job requirements and technologies description here (e.g. We are seeking a React developer with Next.js, TypeScript and Webpack experience)..."></textarea>
+              <button id="btn-custom-job-calibrate" class="btn-primary w-full">
+                <i class="fa-solid fa-calculator"></i> Parse and Fit Profile Gaps
+              </button>
+            </div>
+
             <!-- Timelines checklists modules -->
             <div style="margin-top: 16px;">
               <h3 style="font-size:1.1rem; margin-bottom:8px;">Skill Gap Closing Roadmap</h3>
@@ -415,6 +449,14 @@
                 <div style="display:flex; flex-direction:column;">
                   <span style="font-size: 0.95rem; font-weight: 700;">Nova AI Coach</span>
                   <span style="font-size: 0.75rem; color: var(--accent);">Ready to interview or advise</span>
+                </div>
+                
+                <!-- Voice soundwave controls (Hackathon wow element) -->
+                <div class="soundwave-box">
+                  <canvas id="voice-wave-canvas" class="voice-wave-canvas"></canvas>
+                  <button id="btn-audio-toggle" class="btn-audio-toggle" title="Toggle Nova Voice (TTS)">
+                    <i class="fa-solid fa-microphone"></i>
+                  </button>
                 </div>
               </div>
               
