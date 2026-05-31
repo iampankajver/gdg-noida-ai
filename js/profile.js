@@ -7,12 +7,12 @@ class AuraProfileManager {
       name: "Pankaj Verma",
       email: "pankaj@example.com",
       targetRoleId: "frontend_engineer",
-      skills: ["JavaScript", "React", "HTML5", "CSS3", "Git"] // Default starting skills (with gaps)
+      skills: ["JavaScript", "React", "HTML5", "CSS3", "Git"] // Default starting skills
     };
 
     this.activeAnalysis = null;
+    this.currentFixTarget = null;
     
-    // Bind methods
     this.initElements();
     this.bindEvents();
     this.renderSkills();
@@ -28,9 +28,20 @@ class AuraProfileManager {
     
     // Resume Elements
     this.resumeTextInput = document.getElementById('resume-text-input');
+    this.resumeInteractivePreview = document.getElementById('resume-interactive-preview');
     this.analyzeResumeBtn = document.getElementById('analyze-resume-btn');
     this.loadWeakSampleBtn = document.getElementById('load-weak-sample');
     this.loadStrongSampleBtn = document.getElementById('load-strong-sample');
+    
+    // Tabs Elements
+    this.btnEditRaw = document.getElementById('btn-edit-raw');
+    this.btnEditInteractive = document.getElementById('btn-edit-interactive');
+    
+    // Floating Fix Card Elements
+    this.floatingFixCard = document.getElementById('floating-fix-card');
+    this.floatingFixTitle = document.getElementById('floating-fix-title');
+    this.floatingFixDesc = document.getElementById('floating-fix-desc');
+    this.btnApplyInteractiveFix = document.getElementById('btn-apply-interactive-fix');
     
     // Scoreboard Elements
     this.overallScoreVal = document.getElementById('overall-score-val');
@@ -109,18 +120,34 @@ class AuraProfileManager {
           return;
         }
         
-        // Dynamic audit based on text density
         const analysis = this.generateDynamicAnalysis(text);
         this.analyzeResume(analysis);
       });
     }
+
+    // Editor tab togglers
+    if (this.btnEditRaw && this.btnEditInteractive) {
+      this.btnEditRaw.addEventListener('click', () => this.switchEditorTab('raw'));
+      this.btnEditInteractive.addEventListener('click', () => this.switchEditorTab('interactive'));
+    }
+
+    // Floating card Apply Fix click
+    if (this.btnApplyInteractiveFix) {
+      this.btnApplyInteractiveFix.addEventListener('click', () => this.applyInteractiveFix());
+    }
+
+    // Close floating fix tooltip on external click
+    document.addEventListener('click', (e) => {
+      if (this.floatingFixCard && !this.floatingFixCard.contains(e.target) && !e.target.classList.contains('highlight-item')) {
+        this.floatingFixCard.style.display = 'none';
+      }
+    });
   }
 
   handleAddSkill() {
     const rawVal = this.newSkillInput.value.trim();
     if (!rawVal) return;
     
-    // Capitalize first letters nicely
     const cleanSkill = rawVal.split(' ').map(word => 
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
@@ -157,7 +184,6 @@ class AuraProfileManager {
       </div>
     `).join('');
 
-    // Attach click events
     this.skillTagContainer.querySelectorAll('.skill-tag-remove').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const skill = e.target.getAttribute('data-skill');
@@ -166,13 +192,111 @@ class AuraProfileManager {
     });
   }
 
-  // Auto-sync a skill if added from advisor course completion
   addSkillDirectly(skill) {
     if (!this.profile.skills.includes(skill)) {
       this.profile.skills.push(skill);
       this.renderSkills();
       this.app.onSkillsChange(this.profile.skills);
     }
+  }
+
+  switchEditorTab(tab) {
+    if (tab === 'raw') {
+      this.btnEditRaw.classList.add('active');
+      this.btnEditInteractive.classList.remove('active');
+      this.resumeTextInput.style.display = 'block';
+      this.resumeInteractivePreview.classList.remove('active');
+      if (this.floatingFixCard) this.floatingFixCard.style.display = 'none';
+    } else {
+      const text = this.resumeTextInput.value.trim();
+      if (!text) {
+        alert("Please paste your resume text first before viewing highlights!");
+        return;
+      }
+      
+      this.btnEditRaw.classList.remove('active');
+      this.btnEditInteractive.classList.add('active');
+      this.resumeTextInput.style.display = 'none';
+      this.resumeInteractivePreview.classList.add('active');
+      
+      // Render highlighted spans
+      this.renderInteractiveHighlights(text);
+    }
+  }
+
+  // Parses resume text and injects interactive span highlights (Hackathon wow feature)
+  renderInteractiveHighlights(text) {
+    let html = text;
+    
+    // List of typical weak patterns and replacement suggestions
+    const fixes = [
+      { find: /worked on/gi, label: "Worked on", replace: "Engineered", desc: "Use high-impact technical action verbs.", type: "weak", scoreBoost: 8 },
+      { find: /helped build/gi, label: "Helped build", replace: "Co-developed & deployed", desc: "Show complete project ownership.", type: "passive", scoreBoost: 5 },
+      { find: /attending standups/gi, label: "attending standups", replace: "Facilitating agile cycles", desc: "Change list of chores to leadership metrics.", type: "passive", scoreBoost: 4 },
+      { find: /solved bugs/gi, label: "Solved bugs", replace: "Debugged and optimized pipelines", desc: "Quantify details to reflect precision.", type: "weak", scoreBoost: 6 }
+    ];
+
+    fixes.forEach((f, idx) => {
+      // Replace matches with styled interactive spans
+      html = html.replace(f.find, `<span class="highlight-item ${f.type}" data-fix-idx="${idx}">${f.label}</span>`);
+    });
+
+    this.resumeInteractivePreview.innerHTML = html;
+
+    // Attach click events to the spans
+    this.resumeInteractivePreview.querySelectorAll('.highlight-item').forEach(span => {
+      span.addEventListener('click', (e) => {
+        const fixIdx = parseInt(e.target.getAttribute('data-fix-idx'));
+        this.showFixTooltip(e.target, fixes[fixIdx]);
+      });
+    });
+  }
+
+  showFixTooltip(targetSpan, fixData) {
+    if (!this.floatingFixCard || !this.floatingFixTitle || !this.floatingFixDesc) return;
+    
+    this.currentFixTarget = { span: targetSpan, data: fixData };
+    
+    this.floatingFixTitle.textContent = `Nova Suggestion: Use "${fixData.replace}"`;
+    this.floatingFixDesc.textContent = `${fixData.desc} (Expected Score Increase: +${fixData.scoreBoost}%)`;
+    
+    // Position tooltip below target
+    const rect = targetSpan.getBoundingClientRect();
+    const scrollY = window.scrollY || document.documentElement.scrollTop;
+    const scrollX = window.scrollX || document.documentElement.scrollLeft;
+
+    this.floatingFixCard.style.top = `${rect.bottom + scrollY + 8}px`;
+    this.floatingFixCard.style.left = `${rect.left + scrollX}px`;
+    this.floatingFixCard.style.display = 'block';
+  }
+
+  applyInteractiveFix() {
+    if (!this.currentFixTarget || !this.resumeTextInput) return;
+    
+    const { span, data } = this.currentFixTarget;
+    const rawText = this.resumeTextInput.value;
+    
+    // Replace text in textarea
+    const regex = new RegExp(data.label, 'i');
+    const updatedText = rawText.replace(regex, data.replace);
+    this.resumeTextInput.value = updatedText;
+    
+    // Update preview HTML
+    span.textContent = data.replace;
+    span.className = "text-accent font-bold"; // visual complete state
+    
+    // Recalculate analysis
+    const analysis = this.generateDynamicAnalysis(updatedText);
+    this.analyzeResume(analysis);
+    
+    // Hide floating tooltip
+    this.floatingFixCard.style.display = 'none';
+    this.currentFixTarget = null;
+    
+    // Re-render highlight references for the updated text
+    setTimeout(() => {
+      this.renderInteractiveHighlights(updatedText);
+    }, 800);
   }
 
   analyzeResume(analysis) {
@@ -185,7 +309,6 @@ class AuraProfileManager {
     this.animateScoreChange(this.atsScoreVal, analysis.categories.ats);
     this.animateScoreChange(this.styleScoreVal, analysis.categories.style);
 
-    // Style helper for scores
     this.styleScoreNumber(this.overallScoreVal, analysis.score);
     this.styleScoreNumber(this.impactScoreVal, analysis.categories.impact);
     this.styleScoreNumber(this.clarityScoreVal, analysis.categories.clarity);
@@ -218,14 +341,12 @@ class AuraProfileManager {
 
   animateScoreChange(element, endVal) {
     let startVal = 0;
-    const duration = 800; // ms
+    const duration = 800;
     const startTime = performance.now();
     
     function updateScore(currentTime) {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
-      // Easing out quad
       const easeVal = progress * (2 - progress);
       const currentVal = Math.floor(startVal + easeVal * (endVal - startVal));
       
@@ -259,7 +380,7 @@ class AuraProfileManager {
     const keywordRatio = keywords.length > 0 ? (matchedKeywords / keywords.length) : 0.5;
     const atsScore = Math.min(Math.round(40 + keywordRatio * 60), 100);
 
-    // 2. Detect impact metrics (numbers, percentages, currency symbols)
+    // 2. Detect impact metrics
     const matchesMetrics = text.match(/\d+%/g) || [];
     const matchesCurrency = text.match(/(₹|\$)\d+/g) || [];
     const matchesNumbers = text.match(/\b\d+\b/g) || [];
@@ -281,9 +402,9 @@ class AuraProfileManager {
 
     // 4. Clarity checks
     let clarityScore = 80;
-    if (text.length < 300) clarityScore -= 30; // Too short
-    if (text.length > 3500) clarityScore -= 15; // Too long / wordy
-    if (textLower.includes("responsible for") || textLower.includes("helped with")) clarityScore -= 15; // passive structures
+    if (text.length < 300) clarityScore -= 30;
+    if (text.length > 3500) clarityScore -= 15;
+    if (textLower.includes("responsible for") || textLower.includes("helped with")) clarityScore -= 15;
 
     const overallScore = Math.round((atsScore + impactScore + styleScore + clarityScore) / 4);
 
