@@ -9,6 +9,11 @@ class AuraCoachChat {
     this.currentQuestionIdx = 0;
     this.interviewAnswers = [];
     
+    // Audio/Voice settings
+    this.isAudioEnabled = false;
+    this.waveAnimationId = null;
+    this.wavePhase = 0;
+
     this.initElements();
     this.bindEvents();
     this.sendSystemMsg(AURA_DATA.coachDialogues.welcome);
@@ -21,6 +26,13 @@ class AuraCoachChat {
     this.sendBtn = document.getElementById('chat-send-btn');
     this.promptsContainer = document.getElementById('prompt-suggestions');
     this.chatSidebarMetrics = document.getElementById('chat-sidebar-metrics');
+    
+    // Voice/Canvas elements (Hackathon additions)
+    this.btnAudioToggle = document.getElementById('btn-audio-toggle');
+    this.voiceWaveCanvas = document.getElementById('voice-wave-canvas');
+    if (this.voiceWaveCanvas) {
+      this.canvasCtx = this.voiceWaveCanvas.getContext('2d');
+    }
   }
 
   bindEvents() {
@@ -33,6 +45,121 @@ class AuraCoachChat {
         }
       });
     }
+
+    if (this.btnAudioToggle) {
+      this.btnAudioToggle.addEventListener('click', () => this.toggleAudioVoice());
+    }
+  }
+
+  toggleAudioVoice() {
+    this.isAudioEnabled = !this.isAudioEnabled;
+    
+    if (this.isAudioEnabled) {
+      this.btnAudioToggle.classList.add('active');
+      this.btnAudioToggle.setAttribute('title', 'Mute Nova Voice');
+      if (this.voiceWaveCanvas) {
+        this.voiceWaveCanvas.classList.add('active');
+        this.voiceWaveCanvas.width = 100;
+        this.voiceWaveCanvas.height = 30;
+        this.startWaveAnimation();
+      }
+      // Speak the last message in chat if available
+      this.speakLastMessage();
+    } else {
+      this.btnAudioToggle.classList.remove('active');
+      this.btnAudioToggle.setAttribute('title', 'Toggle Nova Voice (TTS)');
+      if (this.voiceWaveCanvas) {
+        this.voiceWaveCanvas.classList.remove('active');
+      }
+      if (this.waveAnimationId) {
+        cancelAnimationFrame(this.waveAnimationId);
+      }
+      // Halt all active speaking
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+  }
+
+  speakLastMessage() {
+    const coachMessages = this.messagesContainer.querySelectorAll('.chat-msg.coach .msg-bubble');
+    if (coachMessages.length > 0) {
+      const lastMsg = coachMessages[coachMessages.length - 1].textContent;
+      this.speakText(lastMsg);
+    }
+  }
+
+  speakText(text) {
+    if (!this.isAudioEnabled || !('speechSynthesis' in window)) return;
+
+    window.speechSynthesis.cancel(); // Stop current speech
+    
+    // Clean formatting tags for speech readability
+    const cleanText = text
+      .replace(/\*\*|`|_|#|-/g, '')
+      .replace(/https?:\/\/[^\s]+/g, 'the link')
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    
+    // Choose a high-quality local English voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const targetVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
+    if (targetVoice) {
+      utterance.voice = targetVoice;
+    }
+    
+    utterance.rate = 1.05; // slightly faster conversational speed
+    window.speechSynthesis.speak(utterance);
+  }
+
+  startWaveAnimation() {
+    const ctx = this.canvasCtx;
+    const canvas = this.voiceWaveCanvas;
+    if (!ctx || !canvas) return;
+
+    const draw = () => {
+      if (!this.isAudioEnabled) return;
+
+      const width = canvas.width;
+      const height = canvas.height;
+      ctx.clearRect(0, 0, width, height);
+
+      // Check if browser is actively speaking to alter visual waves
+      const isSpeaking = window.speechSynthesis && window.speechSynthesis.speaking;
+      const maxAmp = isSpeaking ? 10 : 2; // high wave when speaking, flatline when silent
+      
+      this.wavePhase += 0.15;
+
+      ctx.beginPath();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#06b6d4'; // Cyan
+      ctx.shadowBlur = 4;
+      ctx.shadowColor = '#06b6d4';
+
+      // Wave 1
+      for (let x = 0; x < width; x++) {
+        const y = height / 2 + Math.sin(x * 0.1 + this.wavePhase) * maxAmp;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Wave 2 (opposite phase, slightly transparent purple)
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(168, 85, 247, 0.6)'; // Purple
+      ctx.shadowColor = '#a855f7';
+      for (let x = 0; x < width; x++) {
+        const y = height / 2 + Math.cos(x * 0.08 - this.wavePhase) * (maxAmp * 0.7);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      this.waveAnimationId = requestAnimationFrame(draw);
+    };
+
+    draw();
   }
 
   renderPrompts() {
@@ -45,7 +172,6 @@ class AuraCoachChat {
       </button>
     `).join('');
 
-    // Attach click events
     this.promptsContainer.querySelectorAll('.prompt-suggestion-item').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const text = e.target.textContent.trim();
@@ -56,10 +182,8 @@ class AuraCoachChat {
   }
 
   handlePromptClick(text, action) {
-    // 1. Add User bubble
     this.sendUserMsg(text);
     
-    // 2. Perform action
     setTimeout(() => {
       this.executeAction(action);
     }, 600);
@@ -91,7 +215,11 @@ class AuraCoachChat {
     this.sendUserMsg(query);
     this.inputField.value = '';
     
-    // Match against current mode
+    // Stop speaking if user interrupts
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    
     setTimeout(() => {
       if (this.isInterviewMode) {
         this.processInterviewAnswer(query);
@@ -107,6 +235,8 @@ class AuraCoachChat {
 
   sendSystemMsg(text) {
     this.appendMessageBubble(text, 'coach', 'N');
+    // Speak automatically if enabled
+    this.speakText(text);
   }
 
   appendMessageBubble(text, sender, initial) {
@@ -152,7 +282,6 @@ class AuraCoachChat {
   sendNovaReply(text) {
     this.showTypingIndicator();
     
-    // Simulate thinking delay
     setTimeout(() => {
       this.hideTypingIndicator();
       this.sendSystemMsg(text);
@@ -165,14 +294,12 @@ class AuraCoachChat {
     }
   }
 
-  // Very lightweight markdown formatter for list lines, bold tags and links
   formatMarkdown(text) {
     let clean = text
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/`(.*?)`/g, '<code style="background: rgba(255,255,255,0.08); padding: 2px 4px; border-radius: 4px;">$1</code>');
     
-    // Format bullets
     if (clean.includes('\n- ')) {
       const lines = clean.split('\n');
       let inList = false;
@@ -212,7 +339,6 @@ class AuraCoachChat {
   processGeneralQuery(query) {
     const q = query.toLowerCase();
     
-    // Keywords triggers
     if (q.includes("interview") || q.includes("mock")) {
       this.executeAction("start_mock_interview");
     } else if (q.includes("resume") || q.includes("cv") || q.includes("ats")) {
@@ -224,7 +350,6 @@ class AuraCoachChat {
     } else if (q.includes("hello") || q.includes("hi") || q.includes("hey")) {
       this.sendNovaReply("Hello! I'm ready. Let's calibrate your profile, start an interview prep, or chat about salary ranges.");
     } else {
-      // Default fallback
       this.sendNovaReply(`
         I hear you! To give you the best career advice, I'd suggest checking out these options:
         - Type **interview** to start a mock technical interview for your active role.
@@ -288,14 +413,12 @@ class AuraCoachChat {
       return;
     }
 
-    // Set interview state
     this.isInterviewMode = true;
     this.interviewRole = currentRole;
     this.interviewQuestions = allQuestions;
     this.currentQuestionIdx = 0;
     this.interviewAnswers = [];
 
-    // Update sidebar layout
     this.updateInterviewSidebar();
 
     this.sendNovaReply(`
@@ -312,10 +435,8 @@ class AuraCoachChat {
 
   processInterviewAnswer(answerText) {
     const question = this.interviewQuestions[this.currentQuestionIdx];
-    
-    // Evaluate answer using simple keyword density & length checks
     const lowerAnswer = answerText.toLowerCase();
-    let score = 30; // base score if they wrote something
+    let score = 30;
     const matchedKeywords = [];
     
     question.keywords.forEach(kw => {
@@ -325,10 +446,9 @@ class AuraCoachChat {
       }
     });
 
-    if (answerText.length > 150) score += 10; // extra points for detailed description
+    if (answerText.length > 150) score += 10;
     score = Math.min(score, 100);
 
-    // Save answer data
     this.interviewAnswers.push({
       question: question.question,
       userAnswer: answerText,
@@ -337,7 +457,6 @@ class AuraCoachChat {
       missing: question.keywords.filter(kw => !matchedKeywords.includes(kw))
     });
 
-    // Provide feedback response
     let feedback = `**Nova's Assessment (Question ${this.currentQuestionIdx + 1}):**\n`;
     feedback += `Score: **${score}/100**\n`;
     
@@ -351,9 +470,7 @@ class AuraCoachChat {
 
     this.currentQuestionIdx++;
 
-    // Check if there are more questions
     if (this.currentQuestionIdx < this.interviewQuestions.length) {
-      // Show feedback + next question
       this.updateInterviewSidebar();
       
       this.sendNovaReply(`
@@ -365,7 +482,6 @@ class AuraCoachChat {
         ${this.interviewQuestions[this.currentQuestionIdx].question}
       `);
     } else {
-      // Wrap up interview
       this.updateInterviewSidebar();
       this.finishMockInterview(feedback);
     }
@@ -374,11 +490,9 @@ class AuraCoachChat {
   finishMockInterview(lastQuestionFeedback) {
     this.isInterviewMode = false;
     
-    // Calculate overall statistics
     const totalScore = this.interviewAnswers.reduce((sum, item) => sum + item.score, 0);
     const avgScore = Math.round(totalScore / this.interviewAnswers.length);
     
-    // Clear sidebar layout
     if (this.chatSidebarMetrics) {
       this.chatSidebarMetrics.innerHTML = '';
     }
