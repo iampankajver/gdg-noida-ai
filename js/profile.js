@@ -29,6 +29,8 @@ class AuraProfileManager {
     // Resume Elements
     this.resumeTextInput = document.getElementById('resume-text-input');
     this.resumeInteractivePreview = document.getElementById('resume-interactive-preview');
+    this.resumeFileInput = document.getElementById('resume-file-input');
+    this.btnUploadPdf = document.getElementById('btn-upload-pdf');
     this.analyzeResumeBtn = document.getElementById('analyze-resume-btn');
     this.loadWeakSampleBtn = document.getElementById('load-weak-sample');
     this.loadStrongSampleBtn = document.getElementById('load-strong-sample');
@@ -111,6 +113,11 @@ class AuraProfileManager {
       });
     }
 
+    // PDF Upload Button
+    if (this.btnUploadPdf && this.resumeFileInput) {
+      this.btnUploadPdf.addEventListener('click', () => this.handlePdfUpload());
+    }
+
     // Text analysis button
     if (this.analyzeResumeBtn) {
       this.analyzeResumeBtn.addEventListener('click', () => {
@@ -142,6 +149,81 @@ class AuraProfileManager {
         this.floatingFixCard.style.display = 'none';
       }
     });
+  }
+
+  async handlePdfUpload() {
+    const file = this.resumeFileInput.files[0];
+    if (!file) {
+      alert("Please select a PDF resume file first!");
+      return;
+    }
+
+    if (file.type !== "application/pdf") {
+      alert("Only PDF files are supported!");
+      return;
+    }
+
+    // Show loading state in elements
+    this.btnUploadPdf.disabled = true;
+    this.btnUploadPdf.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Analyzing...`;
+    
+    this.overallScoreVal.textContent = "...";
+    this.impactScoreVal.textContent = "...";
+    this.clarityScoreVal.textContent = "...";
+    this.atsScoreVal.textContent = "...";
+
+    try {
+      const formData = new FormData();
+      formData.append('resume', file);
+      formData.append('targetRoleId', this.profile.targetRoleId);
+
+      const response = await fetch('/api/analyze-resume', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned error status: ${response.status}`);
+      }
+
+      const analysis = await response.json();
+      
+      if (analysis.error) {
+        throw new Error(analysis.error);
+      }
+
+      this.analyzeResume(analysis);
+
+      // Auto-populate extracted skills tags directly on candidate profile
+      if (analysis.skills && Array.isArray(analysis.skills)) {
+        analysis.skills.forEach(skill => {
+          if (!this.profile.skills.includes(skill)) {
+            this.profile.skills.push(skill);
+          }
+        });
+        this.renderSkills();
+        this.app.onSkillsChange(this.profile.skills);
+      }
+
+      // Fill text preview with mock label if empty
+      if (!this.resumeTextInput.value.trim()) {
+        this.resumeTextInput.value = `[PARSED RESUME PDF CONTENT - ${file.name}]\n\nSkills Found: ${analysis.skills ? analysis.skills.join(', ') : 'None'}\n\nOverall ATS Grade: ${analysis.score}%`;
+      }
+
+      if (this.floatingFixCard) this.floatingFixCard.style.display = 'none';
+
+    } catch (err) {
+      console.error("[Upload Error]", err);
+      alert(`Failed to analyze PDF: ${err.message}`);
+      
+      this.overallScoreVal.textContent = "--%";
+      this.impactScoreVal.textContent = "--%";
+      this.clarityScoreVal.textContent = "--%";
+      this.atsScoreVal.textContent = "--%";
+    } finally {
+      this.btnUploadPdf.disabled = false;
+      this.btnUploadPdf.innerHTML = `<i class="fa-solid fa-file-pdf text-danger"></i> Analyze PDF`;
+    }
   }
 
   handleAddSkill() {
