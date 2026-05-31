@@ -2,12 +2,18 @@ class AuraCoachChat {
   constructor(app) {
     this.app = app;
     
-    // State machine properties
+    // Interview State Machine properties
     this.isInterviewMode = false;
     this.interviewRole = null;
     this.interviewQuestions = [];
     this.currentQuestionIdx = 0;
     this.interviewAnswers = [];
+    
+    // Salary Negotiation State Machine properties (Hackathon addition)
+    this.isNegotiationMode = false;
+    this.negotiationOffer = 1400000; // 14L base
+    this.negotiationLeverage = "Medium";
+    this.negotiationRole = null;
     
     // Audio/Voice settings
     this.isAudioEnabled = false;
@@ -27,7 +33,7 @@ class AuraCoachChat {
     this.promptsContainer = document.getElementById('prompt-suggestions');
     this.chatSidebarMetrics = document.getElementById('chat-sidebar-metrics');
     
-    // Voice/Canvas elements (Hackathon additions)
+    // Voice/Canvas elements
     this.btnAudioToggle = document.getElementById('btn-audio-toggle');
     this.voiceWaveCanvas = document.getElementById('voice-wave-canvas');
     if (this.voiceWaveCanvas) {
@@ -63,7 +69,6 @@ class AuraCoachChat {
         this.voiceWaveCanvas.height = 30;
         this.startWaveAnimation();
       }
-      // Speak the last message in chat if available
       this.speakLastMessage();
     } else {
       this.btnAudioToggle.classList.remove('active');
@@ -74,7 +79,6 @@ class AuraCoachChat {
       if (this.waveAnimationId) {
         cancelAnimationFrame(this.waveAnimationId);
       }
-      // Halt all active speaking
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
@@ -92,24 +96,21 @@ class AuraCoachChat {
   speakText(text) {
     if (!this.isAudioEnabled || !('speechSynthesis' in window)) return;
 
-    window.speechSynthesis.cancel(); // Stop current speech
+    window.speechSynthesis.cancel(); 
     
-    // Clean formatting tags for speech readability
     const cleanText = text
       .replace(/\*\*|`|_|#|-/g, '')
       .replace(/https?:\/\/[^\s]+/g, 'the link')
       .trim();
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    
-    // Choose a high-quality local English voice if available
     const voices = window.speechSynthesis.getVoices();
     const targetVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
     if (targetVoice) {
       utterance.voice = targetVoice;
     }
     
-    utterance.rate = 1.05; // slightly faster conversational speed
+    utterance.rate = 1.05; 
     window.speechSynthesis.speak(utterance);
   }
 
@@ -125,15 +126,14 @@ class AuraCoachChat {
       const height = canvas.height;
       ctx.clearRect(0, 0, width, height);
 
-      // Check if browser is actively speaking to alter visual waves
       const isSpeaking = window.speechSynthesis && window.speechSynthesis.speaking;
-      const maxAmp = isSpeaking ? 10 : 2; // high wave when speaking, flatline when silent
+      const maxAmp = isSpeaking ? 10 : 2; 
       
       this.wavePhase += 0.15;
 
       ctx.beginPath();
       ctx.lineWidth = 1.5;
-      ctx.strokeStyle = '#06b6d4'; // Cyan
+      ctx.strokeStyle = '#06b6d4'; 
       ctx.shadowBlur = 4;
       ctx.shadowColor = '#06b6d4';
 
@@ -145,9 +145,9 @@ class AuraCoachChat {
       }
       ctx.stroke();
 
-      // Wave 2 (opposite phase, slightly transparent purple)
+      // Wave 2
       ctx.beginPath();
-      ctx.strokeStyle = 'rgba(168, 85, 247, 0.6)'; // Purple
+      ctx.strokeStyle = 'rgba(168, 85, 247, 0.6)'; 
       ctx.shadowColor = '#a855f7';
       for (let x = 0; x < width; x++) {
         const y = height / 2 + Math.cos(x * 0.08 - this.wavePhase) * (maxAmp * 0.7);
@@ -165,7 +165,10 @@ class AuraCoachChat {
   renderPrompts() {
     if (!this.promptsContainer) return;
     
-    const prompts = AURA_DATA.coachDialogues.prompts;
+    // Add custom negotiation simulation option to options list
+    const prompts = [...AURA_DATA.coachDialogues.prompts];
+    prompts.push({ text: "💰 Practice Salary Negotiation", action: "start_salary_negotiation" });
+
     this.promptsContainer.innerHTML = prompts.map(p => `
       <button class="prompt-suggestion-item" data-action="${p.action}">
         ${p.text}
@@ -194,6 +197,9 @@ class AuraCoachChat {
       case "start_mock_interview":
         this.startMockInterview();
         break;
+      case "start_salary_negotiation":
+        this.startSalaryNegotiation();
+        break;
       case "suggest_resume_help":
         this.showResumeHelp();
         break;
@@ -215,13 +221,14 @@ class AuraCoachChat {
     this.sendUserMsg(query);
     this.inputField.value = '';
     
-    // Stop speaking if user interrupts
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
     
     setTimeout(() => {
-      if (this.isInterviewMode) {
+      if (this.isNegotiationMode) {
+        this.processNegotiationResponse(query);
+      } else if (this.isInterviewMode) {
         this.processInterviewAnswer(query);
       } else {
         this.processGeneralQuery(query);
@@ -235,7 +242,6 @@ class AuraCoachChat {
 
   sendSystemMsg(text) {
     this.appendMessageBubble(text, 'coach', 'N');
-    // Speak automatically if enabled
     this.speakText(text);
   }
 
@@ -341,6 +347,8 @@ class AuraCoachChat {
     
     if (q.includes("interview") || q.includes("mock")) {
       this.executeAction("start_mock_interview");
+    } else if (q.includes("negotiat") || q.includes("salary offer")) {
+      this.executeAction("start_salary_negotiation");
     } else if (q.includes("resume") || q.includes("cv") || q.includes("ats")) {
       this.executeAction("suggest_resume_help");
     } else if (q.includes("salary") || q.includes("boost") || q.includes("earn")) {
@@ -353,6 +361,7 @@ class AuraCoachChat {
       this.sendNovaReply(`
         I hear you! To give you the best career advice, I'd suggest checking out these options:
         - Type **interview** to start a mock technical interview for your active role.
+        - Type **negotiate** to run an interactive salary negotiation roleplay.
         - Ask about **salaries** to see the highest-value capabilities in the Noida region.
         - Head over to the **Profile** tab to upload and grade your current resume.
       `);
@@ -414,6 +423,7 @@ class AuraCoachChat {
     }
 
     this.isInterviewMode = true;
+    this.isNegotiationMode = false;
     this.interviewRole = currentRole;
     this.interviewQuestions = allQuestions;
     this.currentQuestionIdx = 0;
@@ -553,6 +563,137 @@ class AuraCoachChat {
         </div>
         <div class="interview-progress-bar-bg">
           <div class="interview-progress-bar-fill" style="width: ${progress}%;"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  // --- INTERACTIVE SALARY NEGOTIATION ROLEPLAY GAME ---
+  startSalaryNegotiation() {
+    const currentRole = AURA_DATA.roles.find(r => r.id === this.app.profileManager.profile.targetRoleId);
+    
+    if (!currentRole) {
+      this.sendNovaReply("Please set your target career goal in the Profile section before initiating the negotiation simulator.");
+      return;
+    }
+
+    this.isNegotiationMode = true;
+    this.isInterviewMode = false;
+    this.negotiationOffer = 1400000; // Starting offer at ₹14 Lakhs
+    this.negotiationLeverage = "Medium";
+    this.negotiationRole = currentRole;
+
+    this.updateNegotiationSidebar();
+
+    this.sendNovaReply(`
+      💰 **Salary Negotiation Roleplay Activated**
+      - Role: *${currentRole.name} at Innovate AI*
+      - Starting Offer: *₹14,000,000 (14 Lakhs / yr)*
+      
+      Nova is playing the role of a hiring manager. Respond to counter-offer and defend your requested package. Nova will evaluate your leverage parameters (skills, competing offers, certifications).
+      
+      **Nova's Opening Statement:**
+      "Hi Pankaj! The dev team was extremely impressed by your portfolio reviews. We want to extend an offer to join us in our Noida office. We have budgeted a base salary of **₹14 Lakhs per annum**. What are your thoughts on this package?"
+    `);
+  }
+
+  processNegotiationResponse(responseQuery) {
+    const text = responseQuery.toLowerCase();
+    
+    // Parse target numbers from the response text
+    // Handles matches like "18", "18l", "18 lakhs", "1800000" etc
+    const lakhMatches = text.match(/\b(\d{2})\b/) || text.match(/\b(\d{2})l\b/) || text.match(/\b(\d{2})\s*lakh(s)?\b/);
+    const fullNumberMatches = text.match(/\b(\d{6,7})\b/);
+    
+    let requestedVal = null;
+    
+    if (lakhMatches) {
+      requestedVal = parseInt(lakhMatches[1]) * 100000;
+    } else if (fullNumberMatches) {
+      requestedVal = parseInt(fullNumberMatches[1]);
+    }
+
+    // Check if user wants to accept the offer
+    const isAccepting = text.includes("accept") || text.includes("agree") || text.includes("sign") || text.includes("sounds good");
+
+    if (isAccepting) {
+      this.isNegotiationMode = false;
+      if (this.chatSidebarMetrics) this.chatSidebarMetrics.innerHTML = '';
+      
+      this.sendNovaReply(`
+        🤝 **Negotiation Concluded: Offer Accepted!**
+        - Final Settled package: **₹${(this.negotiationOffer / 100000).toFixed(1)} Lakhs / yr**
+        
+        "That is wonderful to hear, Pankaj! We are excited to have you on board. I will get our finance team to draw up the formal contract for **₹${(this.negotiationOffer / 100000).toFixed(1)} Lakhs** and email it to you by tomorrow. Welcome to Innovate AI!"
+      `);
+      return;
+    }
+
+    if (!requestedVal) {
+      // Prompt user to give a specific number
+      this.sendNovaReply(`
+        "I hear your thoughts, but could you specify what numeric figure or compensation bracket you are aiming for? This helps me present a concrete number back to our leadership team."
+      `);
+      return;
+    }
+
+    // 1. Evaluate counter offer
+    const delta = requestedVal - this.negotiationOffer;
+    const deltaPercentage = (delta / this.negotiationOffer) * 100;
+
+    let responseText = "";
+
+    // Recruiter limits checks
+    if (requestedVal <= this.negotiationOffer) {
+      responseText = `"Well, if you are comfortable with the current number, we can proceed right away to finalize details!"`;
+    } else if (requestedVal > 2500000) {
+      // Too high stretch
+      this.negotiationOffer = 1550000;
+      this.negotiationLeverage = "Low";
+      responseText = `"I'm afraid that figure (₹${(requestedVal / 100000).toFixed(1)} Lakhs) is well outside our maximum salary bands for this level. The absolute limit I can get authorized from our VP of engineering is **₹15.5 Lakhs**, otherwise we might have to consider other candidates. Let me know if that works."`;
+    } else {
+      // Realistic range counter (15L - 25L)
+      // Check justifications keywords
+      const hasCompetencyJustification = text.includes("next.js") || text.includes("typescript") || text.includes("performance") || text.includes("docker") || text.includes("aws") || text.includes("kubernetes") || text.includes("experience");
+      const hasCompetingOffer = text.includes("competing") || text.includes("other offer") || text.includes("another offer") || text.includes("market rate");
+
+      if (hasCompetingOffer && hasCompetencyJustification) {
+        this.negotiationOffer = requestedVal;
+        this.negotiationLeverage = "Extreme";
+        responseText = `"You make a very compelling argument. Given your advanced tech certifications and the competing timelines you are managing, we really want to lock you in. I will approve your counter-offer of **₹${(requestedVal / 100000).toFixed(1)} Lakhs per annum**. Do we have a deal?"`;
+      } else if (hasCompetencyJustification) {
+        const counterProposal = Math.round(this.negotiationOffer + delta * 0.7);
+        this.negotiationOffer = counterProposal;
+        this.negotiationLeverage = "High";
+        responseText = `"Since you bring hands-on experience in the specific frameworks (TypeScript/React) we are migrating to, I can justify a budget bump. We can't hit your exact figure, but I can offer a compromise of **₹${(counterProposal / 100000).toFixed(1)} Lakhs**. Will this package work for you?"`;
+      } else {
+        const counterProposal = Math.round(this.negotiationOffer + delta * 0.4);
+        this.negotiationOffer = counterProposal;
+        this.negotiationLeverage = "Medium";
+        responseText = `"We see your value, but we need to balance internal equity. I can push our offer slightly to **₹${(counterProposal / 100000).toFixed(1)} Lakhs**. To help me push this higher, could you tell me more about what unique architectural contributions you would make to our team?"`;
+      }
+    }
+
+    this.updateNegotiationSidebar();
+    this.sendNovaReply(responseText);
+  }
+
+  updateNegotiationSidebar() {
+    if (!this.chatSidebarMetrics || !this.isNegotiationMode) return;
+
+    this.chatSidebarMetrics.innerHTML = `
+      <div class="interview-metrics-panel" style="background: rgba(245, 158, 11, 0.05); border-color: rgba(245, 158, 11, 0.2);">
+        <h4 style="color: white; margin-bottom: 8px; font-size: 0.95rem;">Salary Negotiation Simulator</h4>
+        <div class="interview-metric-row">
+          <span>Active Offer:</span>
+          <span class="interview-metric-val" style="color: var(--warning);">₹${(this.negotiationOffer / 100000).toFixed(1)} Lakhs / yr</span>
+        </div>
+        <div class="interview-metric-row">
+          <span>Leverage Level:</span>
+          <span class="interview-metric-val" style="color: var(--accent);">${this.negotiationLeverage}</span>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px; border-top: 1px solid var(--card-border); padding-top: 6px;">
+          Justify your counter-offer with skills, competing offers, or market certifications. Type "accept" to conclude.
         </div>
       </div>
     `;
