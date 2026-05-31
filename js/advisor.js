@@ -5,6 +5,7 @@ class AuraCareerAdvisor {
     
     // Track checklist items state (completed courses/sub-tasks)
     this.roadmapState = {};
+    this.customCalibratedRole = null; // Holds custom job details when calibrated
 
     this.initElements();
     this.bindEvents();
@@ -18,6 +19,10 @@ class AuraCareerAdvisor {
     this.skillBreakdownContainer = document.getElementById('skill-breakdown-list');
     this.roadmapContainer = document.getElementById('roadmap-timeline-container');
     
+    // Custom Job elements
+    this.customJobTextarea = document.getElementById('custom-job-textarea');
+    this.btnCustomJobCalibrate = document.getElementById('btn-custom-job-calibrate');
+    
     // Modal notification elements
     this.modalOverlay = document.getElementById('completion-modal');
     this.modalTitle = document.getElementById('modal-title');
@@ -30,6 +35,10 @@ class AuraCareerAdvisor {
       this.modalCloseBtn.addEventListener('click', () => {
         if (this.modalOverlay) this.modalOverlay.classList.remove('active');
       });
+    }
+
+    if (this.btnCustomJobCalibrate && this.customJobTextarea) {
+      this.btnCustomJobCalibrate.addEventListener('click', () => this.calibrateCustomJobDescription());
     }
   }
 
@@ -49,6 +58,10 @@ class AuraCareerAdvisor {
       card.addEventListener('click', (e) => {
         const cardEl = e.currentTarget;
         const roleId = cardEl.getAttribute('data-role-id');
+        
+        // Disable custom mode if switching standard roles
+        this.customCalibratedRole = null;
+        
         this.selectRole(roleId);
       });
     });
@@ -66,17 +79,81 @@ class AuraCareerAdvisor {
       }
     });
 
-    // Notify app of target role change (to sync selector on profile page)
     this.app.onTargetRoleChangeFromAdvisor(roleId);
-    
+    this.runSkillAudit();
+  }
+
+  // Parses pasted job requirements and builds a custom target role context (Hackathon wow feature)
+  calibrateCustomJobDescription() {
+    const text = this.customJobTextarea.value.trim();
+    if (!text) {
+      alert("Please paste your custom Job Description text first!");
+      return;
+    }
+
+    const textLower = text.toLowerCase();
+
+    // The complete set of technologies we have structured courses for
+    const techDictionary = [
+      "JavaScript", "React", "TypeScript", "Next.js", "State Management", 
+      "Docker", "Kubernetes", "AWS", "Terraform", "Python", "Node.js", 
+      "Machine Learning", "GraphQL", "Git", "SQL"
+    ];
+
+    // Scan description for occurrences of technologies
+    const parsedSkills = [];
+    techDictionary.forEach(tech => {
+      // Use regex to match full words
+      const regex = new RegExp(`\\b${tech.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i');
+      if (regex.test(textLower)) {
+        parsedSkills.push(tech);
+      }
+    });
+
+    // Fallback if zero skills are recognized
+    if (parsedSkills.length === 0) {
+      alert("We couldn't identify any standard technologies in this posting. We have defaulted to standard requirements.");
+      return;
+    }
+
+    // Build custom role object
+    this.customCalibratedRole = {
+      name: "Custom Calibrated Job Profile",
+      requiredSkills: parsedSkills,
+      secondarySkills: []
+    };
+
+    // Remove active styling from standard selector cards
+    this.roleSelectorContainer.querySelectorAll('.role-card').forEach(card => {
+      card.classList.remove('active');
+    });
+
     // Recalculate
     this.runSkillAudit();
+
+    // Show success dialog
+    if (this.modalOverlay && this.modalTitle && this.modalText) {
+      this.modalTitle.textContent = "Custom Calibration Loaded! ⚙️";
+      this.modalText.innerHTML = `
+        We analyzed the job requirements and extracted <strong>${parsedSkills.length} primary technologies</strong>:<br>
+        [ ${parsedSkills.join(', ')} ]<br><br>
+        We have updated the skill gap audit and timeline checks below to help you target this position.
+      `;
+      this.modalOverlay.classList.add('active');
+    }
   }
 
   // Orchestrates profile comparison
   runSkillAudit() {
     const userSkills = this.app.profileManager.profile.skills.map(s => s.toLowerCase());
-    const role = AURA_DATA.roles.find(r => r.id === this.selectedRoleId);
+    
+    // Choose active target context: custom role if loaded, else standard selectedRoleId
+    let role;
+    if (this.customCalibratedRole) {
+      role = this.customCalibratedRole;
+    } else {
+      role = AURA_DATA.roles.find(r => r.id === this.selectedRoleId);
+    }
     
     if (!role) return;
 
@@ -103,28 +180,31 @@ class AuraCareerAdvisor {
     });
 
     const totalSkills = role.requiredSkills.length + role.secondarySkills.length;
-    const matchPercent = Math.round((acquired.length / totalSkills) * 100);
+    const matchPercent = totalSkills > 0 ? Math.round((acquired.length / totalSkills) * 100) : 0;
 
     // Sync match score back to app (updates gauge index on dashboard)
     this.app.syncMarketAlignment(matchPercent, criticalGaps.length, acquired.length);
 
-    this.renderAuditSummary(matchPercent, acquired.length, criticalGaps.length, secondaryGaps.length);
+    this.renderAuditSummary(matchPercent, acquired.length, criticalGaps.length, secondaryGaps.length, role);
     this.renderSkillBreakdownList(acquired, criticalGaps, secondaryGaps);
     this.renderRoadmap(criticalGaps, secondaryGaps);
   }
 
-  renderAuditSummary(matchPercent, acquiredCount, criticalCount, secondaryCount) {
+  renderAuditSummary(matchPercent, acquiredCount, criticalCount, secondaryCount, role) {
     if (!this.auditSummaryContainer) return;
     
-    const role = AURA_DATA.roles.find(r => r.id === this.selectedRoleId);
+    const totalSkills = role.requiredSkills.length + role.secondarySkills.length;
     
     this.auditSummaryContainer.innerHTML = `
       <div style="text-align: center; margin-bottom: 20px;">
         <div style="font-size: 3rem; font-weight: 800; color: var(--secondary); font-family: 'Outfit';">
           ${matchPercent}%
         </div>
-        <div style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-          Profile Alignment for ${role.name}
+        <div style="font-size: 0.82rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+          Profile Alignment for:
+        </div>
+        <div style="font-size: 0.95rem; font-weight: 700; color: white; margin-top: 4px;">
+          ${role.name}
         </div>
       </div>
       <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.85rem;">
@@ -143,7 +223,7 @@ class AuraCareerAdvisor {
         <div style="height: 1px; background: var(--card-border); margin: 8px 0;"></div>
         <div class="flex-row" style="justify-content: space-between; font-size: 0.9rem;">
           <span style="color: var(--text-secondary);">Market Value Multiplier</span>
-          <span class="font-bold text-accent" style="font-family: 'Outfit';">+${Math.round((acquiredCount / totalSkillsCount(role)) * 45)}% Potential</span>
+          <span class="font-bold text-accent" style="font-family: 'Outfit';">+${totalSkills > 0 ? Math.round((acquiredCount / totalSkills) * 45) : 0}% Potential</span>
         </div>
       </div>
     `;
@@ -154,7 +234,6 @@ class AuraCareerAdvisor {
 
     let html = '';
 
-    // Add critical gaps
     criticalGaps.forEach(skill => {
       html += `
         <div class="skill-breakdown-item">
@@ -167,7 +246,6 @@ class AuraCareerAdvisor {
       `;
     });
 
-    // Add secondary gaps
     secondaryGaps.forEach(skill => {
       html += `
         <div class="skill-breakdown-item">
@@ -180,7 +258,6 @@ class AuraCareerAdvisor {
       `;
     });
 
-    // Add acquired
     acquired.forEach(item => {
       html += `
         <div class="skill-breakdown-item">
@@ -225,7 +302,6 @@ class AuraCareerAdvisor {
         checklist: [`Complete introductory tutorial for ${skill}`, `Build a prototype demo using ${skill}`]
       };
 
-      // Set default checklist state if not existing
       if (!this.roadmapState[skill]) {
         this.roadmapState[skill] = details.checklist.map(() => false);
       }
@@ -274,10 +350,8 @@ class AuraCareerAdvisor {
       `;
     }).join('');
 
-    // Attach click events on check items
     this.roadmapContainer.querySelectorAll('.step-checklist-item').forEach(itemEl => {
       itemEl.addEventListener('click', (e) => {
-        // Stop default checkbox trigger when clicking label, let handler do sync
         if (e.target.tagName !== 'INPUT') {
           const cb = itemEl.querySelector('input');
           cb.checked = !cb.checked;
@@ -294,7 +368,6 @@ class AuraCareerAdvisor {
   }
 
   updateStepChecklist(skill, index, isChecked, itemElement) {
-    // Update local state
     this.roadmapState[skill][index] = isChecked;
     
     if (isChecked) {
@@ -303,20 +376,16 @@ class AuraCareerAdvisor {
       itemElement.classList.remove('completed');
     }
 
-    // Check if entire checklist for this skill is now complete
     const isSkillComplete = this.roadmapState[skill].every(val => val === true);
     
     if (isSkillComplete) {
-      // Trigger celebrate modal & sync tag addition
       this.celebrateSkillAcquisition(skill);
     }
   }
 
   celebrateSkillAcquisition(skill) {
-    // 1. Add skill to profile list (updates graphs automatically)
     this.app.profileManager.addSkillDirectly(skill);
     
-    // 2. Open Modal to congratulate
     if (this.modalOverlay && this.modalTitle && this.modalText) {
       this.modalTitle.textContent = `Skill Unlocked: ${skill}! 🚀`;
       this.modalText.innerHTML = `
@@ -326,12 +395,6 @@ class AuraCareerAdvisor {
       this.modalOverlay.classList.add('active');
     }
     
-    // 3. Recalculate advisor metrics
     this.runSkillAudit();
   }
-}
-
-// Utility helper to get count of total target skills
-function totalSkillsCount(role) {
-  return role.requiredSkills.length + role.secondarySkills.length;
 }
